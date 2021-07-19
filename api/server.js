@@ -1,6 +1,11 @@
+const path = require('path');
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const session = require('express-session');
+const store = require('connect-session-knex')(session);
+
+const usersRouter = require('./users/users-router.js');
 
 /**
   Do what needs to be done to support sessions with the `express-session` package!
@@ -16,9 +21,13 @@ const cors = require("cors");
  */
 
 const server = express();
-
+//use session
+// server.use(session({
+//   name:'chocolatechip',
+// }))
 server.use(helmet());
 server.use(express.json());
+server.use('/api/users', usersRouter);
 server.use(cors());
 
 server.get("/", (req, res) => {
