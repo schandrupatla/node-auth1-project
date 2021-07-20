@@ -1,7 +1,12 @@
 // Require the `restricted` middleware from `auth-middleware.js`. You will need it here!
 const router = require("express").Router();
-const protected = require('../auth/auth-middleware')
 const Users = require("./users-model");
+const {
+  restricted,
+checkUsernameFree,
+checkPasswordLength,
+checkUsernameExists
+} = require("../auth/auth-middleware")
 
 /**
   [GET] /api/users
@@ -27,17 +32,19 @@ const Users = require("./users-model");
  */
 
 
- router.get("/", (req,res,next)=>{
-   Users.find()
-   .then(users =>{
-     res.status(200).json(users);
-   })
-   .catch(next);
+ router.get("/",restricted, async (req,res,next)=>{
+   try{
+      const users = await Users.find()
+      res.json(users)
+   }
+   catch(err){
+     next(err);
+   }
  })
 
 //findby
- router.get("/", (req,res,next)=>{
-  Users.findBy()
+ router.get("/:username", (req,res,next)=>{
+  Users.findBy(req.param.username)
   .then(users =>{
     res.status(200).json(users);
   })
@@ -45,13 +52,22 @@ const Users = require("./users-model");
 })
 //findById
 router.get("/:user_id", (req,res,next)=>{
-  Users.findBy(req.params.user_id)
+  Users.findById(req.params.user_id)
   .then(users =>{
+    console.log("users:",users)
     res.status(200).json(users);
   })
   .catch(next);
 })
 
+//add user
+router.post("/",  (req, res, next) => {
+  Users.add(req.body)
+    .then((user) => {
+      res.status(201).json(user);
+    })
+    .catch(next);
+});
 
 // Don't forget to add the router to the `exports` object so it can be required in other modules
 module.exports = router;

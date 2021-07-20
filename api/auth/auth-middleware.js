@@ -1,3 +1,5 @@
+const db = require("../users/users-model")
+//const db = require("../../data/db-config");
 /*
   If the user does not have a session saved in the server
 
@@ -6,8 +8,13 @@
     "message": "You shall not pass!"
   }
 */
-function restricted() {
-
+function restricted(req, res, next) {
+  if(req.session.user){
+    next()
+  }
+  else{
+    next({status:401, message:"you shall not pass"})
+  }
 }
 
 /*
@@ -18,8 +25,19 @@ function restricted() {
     "message": "Username taken"
   }
 */
-function checkUsernameFree() {
-
+async function checkUsernameFree(req, res, next) {
+  try{
+      const users = await db.findBy({username:req.body.username})
+      if(!users.length){
+        next()
+      }else{
+        next({status:422,
+        message:"username taken"})
+      }    
+    }//try
+    catch(err){
+      next(err);
+    }
 }
 
 /*
@@ -30,7 +48,32 @@ function checkUsernameFree() {
     "message": "Invalid credentials"
   }
 */
-function checkUsernameExists() {
+// function checkUsernameExists(req, res, next) {
+//   let user =  db("users").where( "username",req.body.username).first();
+//   if(req.body.username === user.username){
+//     res.status(401).json({"message": "Invalid credentials"})
+//   }
+//   else{
+//     next();
+//   }
+
+async function checkUsernameExists(req, res, next) {
+ try{
+    const users = await db.findBy({username:req.body.username})
+    if(users.length){
+      req.user =users[0]
+      next()
+    }
+    else{
+      next({
+        status:401,
+        message:"Invalid credentials"
+      })
+    }
+ }
+ catch(err){
+   next(err)
+ }
 
 }
 
@@ -42,8 +85,19 @@ function checkUsernameExists() {
     "message": "Password must be longer than 3 chars"
   }
 */
-function checkPasswordLength() {
-
+function checkPasswordLength(req, res, next) {
+  if(req.body.password === undefined || req.body.password === "" || req.body.password.length <= 3){
+    res.status(422).json({message:"Password must be longer than 3 chars"});
+  }
+  else{
+    next();
+  }
 }
 
 // Don't forget to add these to the `exports` object so they can be required in other modules
+module.exports = {
+restricted,
+checkUsernameFree,
+checkPasswordLength,
+checkUsernameExists
+}
